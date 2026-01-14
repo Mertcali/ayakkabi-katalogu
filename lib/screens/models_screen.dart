@@ -28,6 +28,7 @@ class ModelsScreen extends StatefulWidget {
 
 class _ModelsScreenState extends State<ModelsScreen> {
   List<ShoeModel> _shoes = [];
+  Map<String, List<ShoeModel>> _groupedShoes = {}; // İsme göre gruplanmış
   bool _isLoading = true;
 
   @override
@@ -47,13 +48,48 @@ class _ModelsScreenState extends State<ModelsScreen> {
       );
 
       debugPrint('✅ Ürünler yüklendi: ${shoes.length} adet');
-      if (shoes.isNotEmpty) {
-        debugPrint('   İlk ürün: ${shoes.first.brand} ${shoes.first.name}');
+
+      // Ürünleri isme göre grupla (renksiz isme göre)
+      final grouped = <String, List<ShoeModel>>{};
+      for (final shoe in shoes) {
+        // Renk ismini çıkar (örn: "Nike Airmax Beyaz" -> "Nike Airmax")
+        String baseName = shoe.name;
+        // Renk isimlerini temizle
+        final colorKeywords = [
+          'Beyaz',
+          'Siyah',
+          'Kırmızı',
+          'Mavi',
+          'Yeşil',
+          'Sarı',
+          'Turuncu',
+          'Mor',
+          'Pembe',
+          'Gri',
+          'Kahverengi',
+        ];
+        for (final color in colorKeywords) {
+          baseName =
+              baseName
+                  .replaceAll(' $color', '')
+                  .replaceAll('$color ', '')
+                  .replaceAll(' - Kadın', '')
+                  .replaceAll(' - Erkek', '')
+                  .trim();
+        }
+
+        if (!grouped.containsKey(baseName)) {
+          grouped[baseName] = [];
+        }
+        grouped[baseName]!.add(shoe);
       }
+
+      debugPrint('📦 Gruplandı: ${grouped.length} benzersiz ürün');
 
       if (mounted) {
         setState(() {
           _shoes = shoes;
+          _groupedShoes = grouped;
           _isLoading = false;
         });
       }
@@ -62,6 +98,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
       if (mounted) {
         setState(() {
           _shoes = [];
+          _groupedShoes = {};
           _isLoading = false;
         });
       }
@@ -201,7 +238,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
       );
     }
 
-    if (_shoes.isEmpty) {
+    if (_groupedShoes.isEmpty) {
       return Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -326,12 +363,14 @@ class _ModelsScreenState extends State<ModelsScreen> {
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.0,
+              childAspectRatio: 0.85, // Görsel odaklı, küçük yazı için yer
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
-              final shoe = _shoes[index];
-              return _buildModernShoeCard(context, shoe);
-            }, childCount: _shoes.length),
+              final productName = _groupedShoes.keys.toList()[index];
+              final variants = _groupedShoes[productName]!;
+              final mainShoe = variants.first; // İlk varyantı göster
+              return _buildModernShoeCard(context, mainShoe, variants);
+            }, childCount: _groupedShoes.length),
           ),
         ),
 
@@ -340,7 +379,11 @@ class _ModelsScreenState extends State<ModelsScreen> {
     );
   }
 
-  Widget _buildModernShoeCard(BuildContext context, ShoeModel shoe) {
+  Widget _buildModernShoeCard(
+    BuildContext context,
+    ShoeModel shoe,
+    List<ShoeModel> colorVariants,
+  ) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     return Container(
@@ -362,40 +405,104 @@ class _ModelsScreenState extends State<ModelsScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _navigateToDetail(context, shoe),
+          onTap: () => _navigateToDetail(context, shoe, colorVariants),
           borderRadius: BorderRadius.circular(16),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Image.asset(
-                shoe.imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          themeProvider.primaryColor.withValues(alpha: 0.15),
-                          themeProvider.secondaryColor.withValues(alpha: 0.15),
-                        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Görsel (Stack ile renk belirteci)
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        shoe.imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  themeProvider.primaryColor.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  themeProvider.secondaryColor.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 48,
+                                color: themeProvider.primaryColor.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 48,
-                        color: themeProvider.primaryColor.withValues(
-                          alpha: 0.6,
+                    // Renk sayısı belirteci
+                    if (colorVariants.length > 1)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.palette_outlined,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${colorVariants.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
+              // Ürün Adı (küçük, tek satır)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Text(
+                  shoe.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: themeProvider.textSecondaryColor,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -429,10 +536,18 @@ class _ModelsScreenState extends State<ModelsScreen> {
     }
   }
 
-  void _navigateToDetail(BuildContext context, ShoeModel shoe) {
+  void _navigateToDetail(
+    BuildContext context,
+    ShoeModel shoe,
+    List<ShoeModel> colorVariants,
+  ) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ShoeDetailScreen(shoe: shoe)),
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                ShoeDetailScreen(shoe: shoe, colorVariants: colorVariants),
+      ),
     );
   }
 

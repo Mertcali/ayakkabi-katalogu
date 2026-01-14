@@ -16,7 +16,7 @@ class SupabaseService {
         .from('categories')
         .select()
         .eq('is_active', true)
-        .order('display_order');
+        .order('display_order', ascending: true);
 
     return (response as List)
         .map((json) => CategoryModel.fromJson(json))
@@ -103,10 +103,11 @@ class SupabaseService {
     // Bu kategori ve alt kategoride ürünü olan markaları bulalım
     final response = await _client
         .from('products')
-        .select('brand_id, brands(*)')
+        .select('brand_id, brands!inner(*)')
         .eq('category_id', categoryId)
         .eq('subcategory_id', subcategoryId)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('brands.is_active', true);
 
     print('📦 SupabaseService - Raw response: $response');
 
@@ -277,7 +278,7 @@ class SupabaseService {
         .from('carousel_slides')
         .select()
         .eq('is_active', true)
-        .order('display_order');
+        .order('display_order', ascending: true);
 
     return (response as List)
         .map((json) => CarouselSlideModel.fromJson(json))
@@ -292,7 +293,7 @@ class SupabaseService {
         .from('explore_sections')
         .select()
         .eq('is_active', true)
-        .order('display_order');
+        .order('display_order', ascending: true);
 
     return (response as List)
         .map((json) => ExploreSectionModel.fromJson(json))

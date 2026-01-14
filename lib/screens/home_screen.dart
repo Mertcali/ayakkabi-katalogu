@@ -29,13 +29,35 @@ class _HomeScreenState extends State<HomeScreen> {
       initialPage: 0,
     );
 
-    // Uygulama başladığında verileri yükle
+    // Uygulama başladığında verileri yükle (build tamamlandıktan sonra)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dataProvider = Provider.of<DataProvider>(context, listen: false);
-      dataProvider.loadAllData().then((_) {
-        _startAutoScroll();
-      });
+      _loadData();
     });
+  }
+
+  Future<void> _loadData() async {
+    final dataProvider = Provider.of<DataProvider>(context, listen: false);
+
+    // Eğer zaten yükleme yapılıyorsa, yeni istek yapma
+    if (dataProvider.isLoading) return;
+
+    // Mevcut timer'ı iptal et
+    _autoScrollTimer?.cancel();
+
+    await dataProvider.loadAllData();
+
+    // Carousel'i başa sar
+    setState(() {
+      _currentPage = 0;
+    });
+
+    if (_newProductsController.hasClients &&
+        dataProvider.carouselSlides.isNotEmpty) {
+      _newProductsController.jumpToPage(0);
+    }
+
+    // Auto-scroll'u yeniden başlat
+    _startAutoScroll();
   }
 
   @override
@@ -46,13 +68,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startAutoScroll() {
+    // Önce mevcut timer'ı iptal et
+    _autoScrollTimer?.cancel();
+
     final dataProvider = Provider.of<DataProvider>(context, listen: false);
 
     // Carousel slides kontrolü
     if (dataProvider.carouselSlides.isEmpty) return;
 
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (dataProvider.carouselSlides.isEmpty) return;
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (dataProvider.carouselSlides.isEmpty) {
+        timer.cancel();
+        return;
+      }
 
       final nextPage = (_currentPage + 1) % dataProvider.carouselSlides.length;
 
@@ -91,242 +124,238 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? Center(
                   child: CircularProgressIndicator(color: theme.primaryColor),
                 )
-                : LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        child: Column(
-                          children: [
-                            // AppBar
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: theme.primaryColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(
-                                      Icons.shopping_bag_rounded,
-                                      color: Colors.white,
-                                      size: 22,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Katalog',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
-                                      color: theme.textColor,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  _buildActionButton(
-                                    theme,
-                                    icon:
-                                        theme.isWinterMode
-                                            ? Icons.wb_sunny_rounded
-                                            : Icons.nightlight_round,
-                                    onTap: () => theme.toggleTheme(),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Stack(
-                                    children: [
-                                      _buildActionButton(
-                                        theme,
-                                        icon: Icons.shopping_cart_outlined,
-                                        onTap:
-                                            () => Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (_) => const CartScreen(),
-                                              ),
-                                            ),
+                : RefreshIndicator(
+                  onRefresh: _loadData,
+                  color: theme.primaryColor,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Column(
+                            children: [
+                              // AppBar
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  12,
+                                  16,
+                                  8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: theme.primaryColor,
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      if (cart.itemCount > 0)
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(5),
-                                            decoration: BoxDecoration(
-                                              color: theme.primaryColor,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Text(
-                                              '${cart.itemCount}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w700,
+                                      child: const Icon(
+                                        Icons.shopping_bag_rounded,
+                                        color: Colors.white,
+                                        size: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Katalog',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w800,
+                                        color: theme.textColor,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    _buildActionButton(
+                                      theme,
+                                      icon:
+                                          theme.isWinterMode
+                                              ? Icons.wb_sunny_rounded
+                                              : Icons.nightlight_round,
+                                      onTap: () => theme.toggleTheme(),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Stack(
+                                      children: [
+                                        _buildActionButton(
+                                          theme,
+                                          icon: Icons.shopping_cart_outlined,
+                                          onTap:
+                                              () => Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) => const CartScreen(),
+                                                ),
+                                              ),
+                                        ),
+                                        if (cart.itemCount > 0)
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(5),
+                                              decoration: BoxDecoration(
+                                                color: theme.primaryColor,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                '${cart.itemCount}',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Carousel - Database'den
-                            _buildPromotionCarousel(
-                              context,
-                              theme,
-                              dataProvider.carouselSlides,
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Kategoriler Grid - 2x3 Database'den
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              child: GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      childAspectRatio: 1.0,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
+                                      ],
                                     ),
-                                itemCount:
-                                    dataProvider.categories.length > 6
-                                        ? 6
-                                        : dataProvider.categories.length,
-                                itemBuilder: (context, index) {
-                                  // Sabit sıralama: erkek, kadin, garson, filet, patik, bebe
-                                  final categoryOrder = [
-                                    'erkek',
-                                    'kadin',
-                                    'garson',
-                                    'filet',
-                                    'patik',
-                                    'bebe',
-                                  ];
-
-                                  // Kategorileri sıralı bul
-                                  final category = dataProvider.categories
-                                      .firstWhere(
-                                        (c) => c.slug == categoryOrder[index],
-                                        orElse:
-                                            () =>
-                                                dataProvider.categories[index],
-                                      );
-
-                                  // Icon mapping
-                                  IconData icon;
-                                  switch (category.slug) {
-                                    case 'erkek':
-                                      icon = Icons.male_rounded;
-                                      break;
-                                    case 'kadin':
-                                      icon = Icons.female_rounded;
-                                      break;
-                                    case 'garson':
-                                      icon = Icons.work_rounded;
-                                      break;
-                                    case 'filet':
-                                      icon = Icons.child_friendly_rounded;
-                                      break;
-                                    case 'patik':
-                                      icon = Icons.child_care_rounded;
-                                      break;
-                                    case 'bebe':
-                                      icon = Icons.cruelty_free_rounded;
-                                      break;
-                                    default:
-                                      icon = Icons.shopping_bag_rounded;
-                                  }
-                                  return _buildGenderCard(
-                                    context,
-                                    theme,
-                                    category.name,
-                                    category.slug,
-                                    icon,
-                                  );
-                                },
+                                  ],
+                                ),
                               ),
-                            ),
 
-                            const SizedBox(height: 24),
-
-                            // Keşfet Grid - 2x2 Database'den
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
+                              // Carousel - Database'den
+                              _buildPromotionCarousel(
+                                context,
+                                theme,
+                                dataProvider.carouselSlides,
                               ),
-                              child: GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 1.8,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
-                                    ),
-                                itemCount:
-                                    dataProvider.exploreSections.length > 4
-                                        ? 4
-                                        : dataProvider.exploreSections.length,
-                                itemBuilder: (context, index) {
-                                  final section =
-                                      dataProvider.exploreSections[index];
 
-                                  // Icon ve renk mapping
-                                  IconData icon;
-                                  Color color;
-                                  final titleLower =
-                                      section.title.toLowerCase();
+                              const SizedBox(height: 24),
 
-                                  if (titleLower.contains('kampanya')) {
-                                    icon = Icons.local_offer_rounded;
-                                    color = theme.primaryColor;
-                                  } else if (titleLower.contains('yeni')) {
-                                    icon = Icons.fiber_new_rounded;
-                                    color = theme.secondaryColor;
-                                  } else if (titleLower.contains('özel') ||
-                                      titleLower.contains('numara')) {
-                                    icon = Icons.star_rounded;
-                                    color = const Color(0xFFF59E0B);
-                                  } else if (titleLower.contains('aksesuar')) {
-                                    icon = Icons.shopping_bag_outlined;
-                                    color = const Color(0xFF8B5CF6);
-                                  } else {
-                                    icon = Icons.category_rounded;
-                                    color = theme.primaryColor;
-                                  }
+                              // Kategoriler Grid - 2x3 Database'den
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        childAspectRatio: 1.0,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                      ),
+                                  itemCount:
+                                      dataProvider.categories.length > 6
+                                          ? 6
+                                          : dataProvider.categories.length,
+                                  itemBuilder: (context, index) {
+                                    // Direkt database'den gelen sıralamayı kullan (display_order)
+                                    final category =
+                                        dataProvider.categories[index];
 
-                                  return _buildFeatureCard(
-                                    context,
-                                    theme,
-                                    section.title,
-                                    icon,
-                                    color,
-                                  );
-                                },
+                                    // Icon mapping
+                                    IconData icon;
+                                    switch (category.slug) {
+                                      case 'erkek':
+                                        icon = Icons.male_rounded;
+                                        break;
+                                      case 'kadin':
+                                        icon = Icons.female_rounded;
+                                        break;
+                                      case 'garson':
+                                        icon = Icons.work_rounded;
+                                        break;
+                                      case 'filet':
+                                        icon = Icons.child_friendly_rounded;
+                                        break;
+                                      case 'patik':
+                                        icon = Icons.child_care_rounded;
+                                        break;
+                                      case 'bebe':
+                                        icon = Icons.cruelty_free_rounded;
+                                        break;
+                                      default:
+                                        icon = Icons.shopping_bag_rounded;
+                                    }
+                                    return _buildGenderCard(
+                                      context,
+                                      theme,
+                                      category.name,
+                                      category.slug,
+                                      icon,
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
 
-                            const SizedBox(height: 20),
-                          ],
+                              const SizedBox(height: 24),
+
+                              // Keşfet Grid - 2x2 Database'den
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 1.8,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                      ),
+                                  itemCount:
+                                      dataProvider.exploreSections.length > 4
+                                          ? 4
+                                          : dataProvider.exploreSections.length,
+                                  itemBuilder: (context, index) {
+                                    final section =
+                                        dataProvider.exploreSections[index];
+
+                                    // Icon ve renk mapping
+                                    IconData icon;
+                                    Color color;
+                                    final titleLower =
+                                        section.title.toLowerCase();
+
+                                    if (titleLower.contains('kampanya')) {
+                                      icon = Icons.local_offer_rounded;
+                                      color = theme.primaryColor;
+                                    } else if (titleLower.contains('yeni')) {
+                                      icon = Icons.fiber_new_rounded;
+                                      color = theme.secondaryColor;
+                                    } else if (titleLower.contains('özel') ||
+                                        titleLower.contains('numara')) {
+                                      icon = Icons.star_rounded;
+                                      color = const Color(0xFFF59E0B);
+                                    } else if (titleLower.contains(
+                                      'aksesuar',
+                                    )) {
+                                      icon = Icons.shopping_bag_outlined;
+                                      color = const Color(0xFF8B5CF6);
+                                    } else {
+                                      icon = Icons.category_rounded;
+                                      color = theme.primaryColor;
+                                    }
+
+                                    return _buildFeatureCard(
+                                      context,
+                                      theme,
+                                      section.title,
+                                      icon,
+                                      color,
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
       ),
     );
@@ -424,43 +453,80 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             itemBuilder: (context, index) {
               final slide = slides[index];
-              debugPrint('🎠 Carousel Slide $index: ${slide.imageUrl}');
+              final isNetworkImage =
+                  slide.imageUrl.startsWith('http://') ||
+                  slide.imageUrl.startsWith('https://');
+
               return ClipRRect(
                 borderRadius: BorderRadius.zero,
-                child: Image.asset(
-                  slide.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    debugPrint(
-                      '❌ Carousel görsel yüklenemedi: ${slide.imageUrl}',
-                    );
-                    debugPrint('   Hata: $error');
-                    return Container(
-                      color: theme.surfaceVariantColor,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.image_not_supported_outlined,
-                              color: theme.textSecondaryColor,
-                              size: 48,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Görsel yüklenemedi',
-                              style: TextStyle(
-                                color: theme.textSecondaryColor,
-                                fontSize: 12,
+                child:
+                    isNetworkImage
+                        ? Image.network(
+                          slide.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint(
+                              '❌ Carousel görsel yüklenemedi: ${slide.imageUrl}',
+                            );
+                            return Container(
+                              color: theme.surfaceVariantColor,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.image_not_supported_outlined,
+                                      color: theme.textSecondaryColor,
+                                      size: 48,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Görsel yüklenemedi',
+                                      style: TextStyle(
+                                        color: theme.textSecondaryColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          },
+                        )
+                        : Image.asset(
+                          slide.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint(
+                              '❌ Carousel görsel yüklenemedi: ${slide.imageUrl}',
+                            );
+                            return Container(
+                              color: theme.surfaceVariantColor,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.image_not_supported_outlined,
+                                      color: theme.textSecondaryColor,
+                                      size: 48,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Görsel yüklenemedi',
+                                      style: TextStyle(
+                                        color: theme.textSecondaryColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
               );
             },
           ),

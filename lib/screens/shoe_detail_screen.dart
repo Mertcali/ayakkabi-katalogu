@@ -8,8 +8,13 @@ import 'cart_screen.dart';
 
 class ShoeDetailScreen extends StatefulWidget {
   final ShoeModel shoe;
+  final List<ShoeModel> colorVariants;
 
-  const ShoeDetailScreen({super.key, required this.shoe});
+  const ShoeDetailScreen({
+    super.key,
+    required this.shoe,
+    this.colorVariants = const [],
+  });
 
   @override
   State<ShoeDetailScreen> createState() => _ShoeDetailScreenState();
@@ -18,11 +23,13 @@ class ShoeDetailScreen extends StatefulWidget {
 class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
   late PageController _pageController;
   int _currentImageIndex = 0;
+  late ShoeModel _selectedVariant;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _selectedVariant = widget.shoe;
   }
 
   @override
@@ -57,7 +64,7 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.shoe.name,
+          _selectedVariant.name,
           style: Theme.of(
             context,
           ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -175,60 +182,63 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
   }
 
   Widget _buildModernImageSection(ThemeProvider themeProvider) {
-    final productImages = widget.shoe.images;
+    // Birden fazla renk varsa renk varyantlarını göster, yoksa tek ürünün görsellerini
+    final hasMultipleColors = widget.colorVariants.length > 1;
+    final itemCount =
+        hasMultipleColors
+            ? widget.colorVariants.length
+            : _selectedVariant.images.length;
 
     return SizedBox(
       width: double.infinity,
-      height: 400,
+      height: 650,
       child: Stack(
         children: [
-          // PageView for product images
+          // PageView - Renk varyantları arasında veya aynı ürünün görselleri arasında geçiş
           PageView.builder(
             controller: _pageController,
             physics: const ClampingScrollPhysics(),
-            itemCount: productImages.length,
+            itemCount: itemCount,
             onPageChanged: (index) {
               setState(() {
                 _currentImageIndex = index;
+                if (hasMultipleColors) {
+                  // Renk varyantları arasında geçiş
+                  _selectedVariant = widget.colorVariants[index];
+                }
               });
             },
             itemBuilder: (context, index) {
-              final imagePath = productImages[index];
-              return ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-                child: Image.asset(
-                  imagePath,
-                  width: double.infinity,
-                  height: 400,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: double.infinity,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            themeProvider.primaryColor.withValues(alpha: 0.15),
-                            themeProvider.secondaryColor.withValues(
-                              alpha: 0.15,
-                            ),
-                          ],
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(24),
-                          bottomRight: Radius.circular(24),
-                        ),
+              final imagePath =
+                  hasMultipleColors
+                      ? widget.colorVariants[index].imagePath
+                      : _selectedVariant.images[index];
+              return Image.asset(
+                imagePath,
+                width: double.infinity,
+                height: 650,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: double.infinity,
+                    height: 650,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          themeProvider.primaryColor.withValues(alpha: 0.15),
+                          themeProvider.secondaryColor.withValues(
+                            alpha: 0.15,
+                          ),
+                        ],
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_bag_outlined,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shopping_bag_outlined,
                             size: 100,
                             color: themeProvider.primaryColor.withValues(
                               alpha: 0.5,
@@ -236,7 +246,7 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            widget.shoe.name,
+                            _selectedVariant.name,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -267,12 +277,8 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
           IgnorePointer(
             child: Container(
               width: double.infinity,
-              height: 400,
+              height: 650,
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -285,8 +291,8 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
             ),
           ),
 
-          // Navigation dots - Fotoğraf sayısı
-          if (productImages.length > 1)
+          // Navigation dots - Renk/Fotoğraf sayısı
+          if (itemCount > 1)
             Positioned(
               bottom: 20,
               right: 20,
@@ -302,14 +308,16 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.photo_library_outlined,
+                    Icon(
+                      hasMultipleColors
+                          ? Icons.palette_outlined
+                          : Icons.photo_library_outlined,
                       color: Colors.white,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${_currentImageIndex + 1}/${productImages.length}',
+                      '${_currentImageIndex + 1}/$itemCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -317,7 +325,7 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    ...List.generate(productImages.length, (index) {
+                    ...List.generate(itemCount, (index) {
                       return GestureDetector(
                         onTap: () {
                           _pageController.animateToPage(
@@ -354,49 +362,157 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Ürün Adı
+        // Ürün Adı (Görselin altında)
         Text(
-          widget.shoe.name,
+          _selectedVariant.name,
           style: TextStyle(
-            fontSize: 26,
+            fontSize: 24,
             fontWeight: FontWeight.w700,
             color: themeProvider.textColor,
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         // Marka
         Text(
-          widget.shoe.brand,
+          _selectedVariant.brand,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             color: themeProvider.textSecondaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
+
+        // Renk Seçici (Eğer birden fazla renk varsa)
+        if (widget.colorVariants.length > 1) ...[
+          const SizedBox(height: 20),
+          Text(
+            'Renk Seçin',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: themeProvider.textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children:
+                widget.colorVariants.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final variant = entry.value;
+                  final isSelected = variant.id == _selectedVariant.id;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedVariant = variant;
+                        _currentImageIndex = index;
+                      });
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color:
+                                  isSelected
+                                      ? themeProvider.primaryColor
+                                      : themeProvider.borderColor,
+                              width: isSelected ? 3 : 1.5,
+                            ),
+                            boxShadow:
+                                isSelected
+                                    ? [
+                                      BoxShadow(
+                                        color: themeProvider.primaryColor
+                                            .withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ]
+                                    : null,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(3),
+                            child: ClipOval(
+                              child: Image.asset(
+                                variant.imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: themeProvider.surfaceVariantColor,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.image_outlined,
+                                        size: 20,
+                                        color: themeProvider.textSecondaryColor,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          variant.color,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color:
+                                isSelected
+                                    ? themeProvider.primaryColor
+                                    : themeProvider.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+          ),
+        ],
+
         const SizedBox(height: 24),
 
-        // Ürün Bilgileri - Belirgin Kartlar
-        Row(
-          children: [
-            Expanded(
-              child: _buildInfoCard(
-                themeProvider,
-                icon: Icons.palette_outlined,
-                title: 'Renk',
-                value: widget.shoe.color,
-              ),
+        // Açıklama Alanı
+        Text(
+          'Ürün Açıklaması',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: themeProvider.textColor,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: themeProvider.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: themeProvider.borderColor, width: 1),
+          ),
+          child: Text(
+            _selectedVariant.description ??
+                'Bu ürün için henüz açıklama eklenmemiştir.',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: themeProvider.textSecondaryColor,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildInfoCard(
-                themeProvider,
-                icon: Icons.straighten_outlined,
-                title: 'Numara Aralığı',
-                value: widget.shoe.sizeRange,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

@@ -10,6 +10,7 @@ class ShoeModel {
   final List<String> images; // Ürünün tüm görselleri
   final String category;
   final String gender;
+  final String? description; // Ürün açıklaması
 
   ShoeModel({
     required this.id,
@@ -21,6 +22,7 @@ class ShoeModel {
     List<String>? images, // Opsiyonel, verilmezse imagePath kullanılır
     required this.category,
     required this.gender,
+    this.description,
   }) : images = images ?? [imagePath];
 
   /// Veritabanındaki kısa path'i tam asset path'e çevirir
@@ -59,6 +61,7 @@ class ShoeModel {
       images: allImages.isNotEmpty ? allImages : [primaryImage],
       category: product.subcategory?.slug ?? '',
       gender: product.category?.slug ?? '',
+      description: product.description,
     );
   }
 }
