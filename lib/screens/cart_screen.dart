@@ -340,69 +340,30 @@ class CartScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _shareViaWhatsApp(context, cart),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      backgroundColor: const Color(0xFF25D366),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.share, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'WhatsApp',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+            ElevatedButton(
+              onPressed: () => _shareViaWhatsApp(context, cart),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                backgroundColor: const Color(0xFF25D366),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.share, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'WhatsApp ile Paylaş',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () => _showCheckoutDialog(context, theme),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.check_circle_outline),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Siparişi Tamamla',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -458,7 +419,9 @@ class CartScreen extends StatelessWidget {
       message += '${i + 1}. *${item.shoe.name}*\n';
       message += '   • Marka: ${item.shoe.brand}\n';
       message += '   • Renk: ${item.shoe.color}\n';
-      message += '   • Numara Aralığı: ${item.shoe.sizeRange}\n';
+      if (item.shoe.description != null && item.shoe.description!.isNotEmpty) {
+        message += '   • Açıklama: ${item.shoe.description}\n';
+      }
       message += '   • Koli Adedi: ${item.quantity}\n\n';
     }
 

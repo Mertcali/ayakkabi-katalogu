@@ -191,7 +191,7 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
 
     return SizedBox(
       width: double.infinity,
-      height: 650,
+      height: 400,
       child: Stack(
         children: [
           // PageView - Renk varyantları arasında veya aynı ürünün görselleri arasında geçiş
@@ -213,32 +213,41 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                   hasMultipleColors
                       ? widget.colorVariants[index].imagePath
                       : _selectedVariant.images[index];
-              return Image.asset(
-                imagePath,
-                width: double.infinity,
-                height: 650,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 650,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          themeProvider.primaryColor.withValues(alpha: 0.15),
-                          themeProvider.secondaryColor.withValues(
-                            alpha: 0.15,
-                          ),
-                        ],
+              return ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+                child: Image.asset(
+                  imagePath,
+                  width: double.infinity,
+                  height: 400,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: double.infinity,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            themeProvider.primaryColor.withValues(alpha: 0.15),
+                            themeProvider.secondaryColor.withValues(
+                              alpha: 0.15,
+                            ),
+                          ],
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(24),
+                          bottomRight: Radius.circular(24),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shopping_bag_outlined,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
                             size: 100,
                             color: themeProvider.primaryColor.withValues(
                               alpha: 0.5,
@@ -277,8 +286,12 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
           IgnorePointer(
             child: Container(
               width: double.infinity,
-              height: 650,
+              height: 400,
               decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

@@ -361,9 +361,9 @@ class _ModelsScreenState extends State<ModelsScreen> {
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.85, // Görsel odaklı, küçük yazı için yer
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.7, // Daha büyük görsel için daha uzun kartlar
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               final productName = _groupedShoes.keys.toList()[index];
@@ -374,7 +374,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
           ),
         ),
 
-        const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        const SliverToBoxAdapter(child: SizedBox(height: 20)),
       ],
     );
   }
@@ -410,7 +410,6 @@ class _ModelsScreenState extends State<ModelsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Görsel (Stack ile renk belirteci)
               Expanded(
                 child: Stack(
                   fit: StackFit.expand,
@@ -449,7 +448,6 @@ class _ModelsScreenState extends State<ModelsScreen> {
                         },
                       ),
                     ),
-                    // Renk sayısı belirteci
                     if (colorVariants.length > 1)
                       Positioned(
                         top: 8,
@@ -489,7 +487,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
               ),
               // Ürün Adı (küçük, tek satır)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 child: Text(
                   shoe.name,
                   maxLines: 1,
