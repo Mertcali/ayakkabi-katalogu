@@ -216,11 +216,26 @@ class CartScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildTag(context, theme, item.shoe.color),
-                    const SizedBox(width: 8),
-                    _buildTag(context, theme, 'Numara: ${item.shoe.sizeRange}'),
+                    if (item.shoe.description != null &&
+                        item.shoe.description!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          item.shoe.description!,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: theme.textSecondaryColor,
+                            fontSize: 10,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                   ],
                 ),
               ],

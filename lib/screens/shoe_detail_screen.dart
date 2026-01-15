@@ -600,11 +600,13 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
 
   void _addToCart(BuildContext context) {
     final cart = Provider.of<CartProvider>(context, listen: false);
-    cart.addToCart(widget.shoe);
+    cart.addToCart(_selectedVariant);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${widget.shoe.name} - 1 Koli sepete eklendi!'),
+        content: Text(
+          '${_selectedVariant.name} (${_selectedVariant.color}) - 1 Koli sepete eklendi!',
+        ),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -5,10 +5,7 @@ class CartItem {
   final ShoeModel shoe;
   int quantity; // Koli adedi
 
-  CartItem({
-    required this.shoe,
-    this.quantity = 1,
-  });
+  CartItem({required this.shoe, this.quantity = 1});
 }
 
 class CartProvider with ChangeNotifier {
@@ -19,17 +16,15 @@ class CartProvider with ChangeNotifier {
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
   void addToCart(ShoeModel shoe) {
-    // Check if item already exists
+    // Check if item already exists (same id AND same color)
     final existingIndex = _items.indexWhere(
-      (item) => item.shoe.id == shoe.id,
+      (item) => item.shoe.id == shoe.id && item.shoe.color == shoe.color,
     );
 
     if (existingIndex >= 0) {
       _items[existingIndex].quantity++;
     } else {
-      _items.add(CartItem(
-        shoe: shoe,
-      ));
+      _items.add(CartItem(shoe: shoe));
     }
     notifyListeners();
   }
@@ -53,4 +48,3 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
 }
-
