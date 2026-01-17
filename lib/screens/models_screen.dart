@@ -416,37 +416,92 @@ class _ModelsScreenState extends State<ModelsScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        shoe.imagePath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  themeProvider.primaryColor.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  themeProvider.secondaryColor.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                ],
+                      child:
+                          shoe.imagePath.startsWith('http')
+                              ? Image.network(
+                                shoe.imagePath,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (
+                                  context,
+                                  child,
+                                  loadingProgress,
+                                ) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: themeProvider.surfaceVariantColor,
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: themeProvider.primaryColor,
+                                        value:
+                                            loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          themeProvider.primaryColor.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          themeProvider.secondaryColor
+                                              .withValues(alpha: 0.15),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.shopping_bag_outlined,
+                                        size: 48,
+                                        color: themeProvider.primaryColor
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                              : Image.asset(
+                                shoe.imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          themeProvider.primaryColor.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          themeProvider.secondaryColor
+                                              .withValues(alpha: 0.15),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.shopping_bag_outlined,
+                                        size: 48,
+                                        color: themeProvider.primaryColor
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.shopping_bag_outlined,
-                                size: 48,
-                                color: themeProvider.primaryColor.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
                     ),
                     if (colorVariants.length > 1)
                       Positioned(

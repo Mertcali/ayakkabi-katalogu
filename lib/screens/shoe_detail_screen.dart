@@ -182,19 +182,31 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
   }
 
   Widget _buildModernImageSection(ThemeProvider themeProvider) {
-    // Birden fazla renk varsa renk varyantlarını göster, yoksa tek ürünün görsellerini
-    final hasMultipleColors = widget.colorVariants.length > 1;
-    final itemCount =
-        hasMultipleColors
-            ? widget.colorVariants.length
-            : _selectedVariant.images.length;
+    // Tüm renklerin tüm görsellerini birleştir
+    final List<MapEntry<ShoeModel, String>> allImages = [];
+
+    if (widget.colorVariants.length > 1) {
+      // Birden fazla renk varsa, her rengin tüm görsellerini ekle
+      for (final variant in widget.colorVariants) {
+        for (final image in variant.images) {
+          allImages.add(MapEntry(variant, image));
+        }
+      }
+    } else {
+      // Tek renk varsa, sadece o rengin görsellerini ekle
+      for (final image in _selectedVariant.images) {
+        allImages.add(MapEntry(_selectedVariant, image));
+      }
+    }
+
+    final itemCount = allImages.length;
 
     return SizedBox(
       width: double.infinity,
       height: 400,
       child: Stack(
         children: [
-          // PageView - Renk varyantları arasında veya aynı ürünün görselleri arasında geçiş
+          // PageView - Tüm renklerin tüm görselleri arasında geçiş
           PageView.builder(
             controller: _pageController,
             physics: const ClampingScrollPhysics(),
@@ -202,82 +214,152 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
             onPageChanged: (index) {
               setState(() {
                 _currentImageIndex = index;
-                if (hasMultipleColors) {
-                  // Renk varyantları arasında geçiş
-                  _selectedVariant = widget.colorVariants[index];
-                }
+                // Kaydırırken otomatik renk değiştir
+                _selectedVariant = allImages[index].key;
               });
             },
             itemBuilder: (context, index) {
-              final imagePath =
-                  hasMultipleColors
-                      ? widget.colorVariants[index].imagePath
-                      : _selectedVariant.images[index];
+              final imagePath = allImages[index].value;
+
+              final isNetworkImage = imagePath.startsWith('http');
+
               return ClipRRect(
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
                 ),
-                child: Image.asset(
-                  imagePath,
-                  width: double.infinity,
-                  height: 400,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: double.infinity,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            themeProvider.primaryColor.withValues(alpha: 0.15),
-                            themeProvider.secondaryColor.withValues(
-                              alpha: 0.15,
-                            ),
-                          ],
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(24),
-                          bottomRight: Radius.circular(24),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 100,
-                            color: themeProvider.primaryColor.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _selectedVariant.name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: themeProvider.primaryColor.withValues(
-                                alpha: 0.7,
+                child:
+                    isNetworkImage
+                        ? Image.network(
+                          imagePath,
+                          width: double.infinity,
+                          height: 400,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: double.infinity,
+                              height: 400,
+                              decoration: BoxDecoration(
+                                color: themeProvider.surfaceVariantColor,
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(24),
+                                  bottomRight: Radius.circular(24),
+                                ),
                               ),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Görsel Yükleniyor...',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: themeProvider.textSecondaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: themeProvider.primaryColor,
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: 400,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    themeProvider.primaryColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    themeProvider.secondaryColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                  ],
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(24),
+                                  bottomRight: Radius.circular(24),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.shopping_bag_outlined,
+                                    size: 60,
+                                    color: themeProvider.textColor.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Görsel yüklenemedi',
+                                    style: TextStyle(
+                                      color: themeProvider.textColor.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        )
+                        : Image.asset(
+                          imagePath,
+                          width: double.infinity,
+                          height: 400,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: 400,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    themeProvider.primaryColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    themeProvider.secondaryColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                  ],
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(24),
+                                  bottomRight: Radius.circular(24),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.shopping_bag_outlined,
+                                    size: 60,
+                                    color: themeProvider.textColor.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Görsel yüklenemedi',
+                                    style: TextStyle(
+                                      color: themeProvider.textColor.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
               );
             },
           ),
@@ -322,9 +404,7 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      hasMultipleColors
-                          ? Icons.palette_outlined
-                          : Icons.photo_library_outlined,
+                      Icons.photo_library_outlined,
                       color: Colors.white,
                       size: 16,
                     ),
@@ -418,12 +498,21 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                   final isSelected = variant.id == _selectedVariant.id;
                   return GestureDetector(
                     onTap: () {
+                      // O rengin ilk görselinin carousel'deki index'ini bul
+                      int targetIndex = 0;
+                      for (int i = 0; i < widget.colorVariants.length; i++) {
+                        if (widget.colorVariants[i].id == variant.id) {
+                          break;
+                        }
+                        targetIndex += widget.colorVariants[i].images.length;
+                      }
+
                       setState(() {
                         _selectedVariant = variant;
-                        _currentImageIndex = index;
+                        _currentImageIndex = targetIndex;
                       });
                       _pageController.animateToPage(
-                        index,
+                        targetIndex,
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
                       );

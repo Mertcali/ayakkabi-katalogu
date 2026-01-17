@@ -274,30 +274,52 @@ class SupabaseService {
 
   /// Aktif carousel slide'larını getirir
   static Future<List<CarouselSlideModel>> getCarouselSlides() async {
-    final response = await _client
-        .from('carousel_slides')
-        .select()
-        .eq('is_active', true)
-        .order('display_order', ascending: true);
+    try {
+      final response = await _client
+          .from('carousel_slides')
+          .select()
+          .eq('is_active', true)
+          .order('display_order', ascending: true);
 
-    return (response as List)
-        .map((json) => CarouselSlideModel.fromJson(json))
-        .toList();
+      return (response as List).map((json) {
+        try {
+          return CarouselSlideModel.fromJson(json);
+        } catch (e) {
+          print('❌ Carousel slide parsing error: $e');
+          print('🔍 Problematic JSON: $json');
+          rethrow;
+        }
+      }).toList();
+    } catch (e) {
+      print('❌ getCarouselSlides error: $e');
+      rethrow;
+    }
   }
 
   // ==================== EXPLORE SECTIONS ====================
 
   /// Aktif keşfet bölümlerini getirir
   static Future<List<ExploreSectionModel>> getExploreSections() async {
-    final response = await _client
-        .from('explore_sections')
-        .select()
-        .eq('is_active', true)
-        .order('display_order', ascending: true);
+    try {
+      final response = await _client
+          .from('explore_sections')
+          .select()
+          .eq('is_active', true)
+          .order('display_order', ascending: true);
 
-    return (response as List)
-        .map((json) => ExploreSectionModel.fromJson(json))
-        .toList();
+      return (response as List).map((json) {
+        try {
+          return ExploreSectionModel.fromJson(json);
+        } catch (e) {
+          print('❌ Explore section parsing error: $e');
+          print('🔍 Problematic JSON: $json');
+          rethrow;
+        }
+      }).toList();
+    } catch (e) {
+      print('❌ getExploreSections error: $e');
+      rethrow;
+    }
   }
 
   // ==================== APP SETTINGS ====================

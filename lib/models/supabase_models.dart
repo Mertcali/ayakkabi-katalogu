@@ -22,9 +22,9 @@ class CategoryModel {
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
       id: json['id'].toString(),
-      name: json['name'] as String,
-      slug: json['slug'] as String,
-      iconName: json['icon_name'] as String?,
+      name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
+      iconName: json['icon_name']?.toString(),
       displayOrder: json['display_order'] as int? ?? 0,
       isActive: json['is_active'] as bool? ?? true,
     );
@@ -63,9 +63,9 @@ class SubcategoryModel {
   factory SubcategoryModel.fromJson(Map<String, dynamic> json) {
     return SubcategoryModel(
       id: json['id'].toString(),
-      name: json['name'] as String,
-      slug: json['slug'] as String,
-      iconName: json['icon_name'] as String?,
+      name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
+      iconName: json['icon_name']?.toString(),
       displayOrder: json['display_order'] as int? ?? 0,
       isActive: json['is_active'] as bool? ?? true,
     );
@@ -105,12 +105,12 @@ class BrandModel {
   factory BrandModel.fromJson(Map<String, dynamic> json) {
     return BrandModel(
       id: json['id'].toString(),
-      name: json['name'] as String,
+      name: json['name']?.toString() ?? '',
       slug:
-          json['slug'] as String? ??
+          json['slug']?.toString() ??
           json['name'].toString().toLowerCase().replaceAll(' ', '-'),
-      logoUrl: json['logo_url'] as String?,
-      description: json['description'] as String?,
+      logoUrl: json['logo_url']?.toString(),
+      description: json['description']?.toString(),
       displayOrder: json['display_order'] as int? ?? 0,
       isActive: json['is_active'] as bool? ?? true,
     );
@@ -145,8 +145,8 @@ class ColorModel {
   factory ColorModel.fromJson(Map<String, dynamic> json) {
     return ColorModel(
       id: json['id'].toString(),
-      name: json['name'] as String,
-      hexCode: json['hex_code'] as String?,
+      name: json['name']?.toString() ?? '',
+      hexCode: json['hex_code']?.toString(),
       displayOrder: json['display_order'] as int? ?? 0,
     );
   }
@@ -213,15 +213,15 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       id: json['id'].toString(),
-      name: json['name'] as String,
-      slug: json['slug'] as String? ?? '',
+      name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
       brandId: json['brand_id']?.toString(),
       categoryId: json['category_id']?.toString(),
       subcategoryId: json['subcategory_id']?.toString(),
       colorId: json['color_id']?.toString(),
-      sizeRange: json['size_range'] as String?,
-      imagePath: json['image_path'] as String?,
-      description: json['description'] as String?,
+      sizeRange: json['size_range']?.toString(),
+      imagePath: json['image_path']?.toString(),
+      description: json['description']?.toString(),
       isNew: json['is_new'] as bool? ?? false,
       isFeatured: json['is_featured'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
@@ -277,12 +277,15 @@ class ProductModel {
 
   /// Tüm görsel URL'leri
   List<String> get imageUrls {
-    // Eğer direkt image_path varsa onu kullan
+    // Önce product_images tablosundan çek
+    if (images.isNotEmpty) {
+      return images.map((img) => img.imageUrl).toList();
+    }
+    // Yoksa direkt image_path'i kullan (geriye dönük uyumluluk)
     if (imagePath != null && imagePath!.isNotEmpty) {
       return [imagePath!];
     }
-    // Yoksa product_images'den al
-    return images.map((img) => img.imageUrl).toList();
+    return [];
   }
 
   Map<String, dynamic> toJson() {
@@ -322,8 +325,8 @@ class ProductImageModel {
   factory ProductImageModel.fromJson(Map<String, dynamic> json) {
     return ProductImageModel(
       id: json['id'].toString(),
-      productId: json['product_id'] as String,
-      imageUrl: json['image_url'] as String,
+      productId: json['product_id']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString() ?? '',
       isPrimary: json['is_primary'] as bool? ?? false,
       displayOrder: json['display_order'] as int? ?? 0,
     );
@@ -368,11 +371,11 @@ class CarouselSlideModel {
   factory CarouselSlideModel.fromJson(Map<String, dynamic> json) {
     return CarouselSlideModel(
       id: json['id'].toString(),
-      title: json['title'] as String?,
-      subtitle: json['subtitle'] as String?,
-      imageUrl: json['image_url'] as String,
-      linkType: json['link_type'] as String?,
-      linkValue: json['link_value'] as String?,
+      title: json['title']?.toString(),
+      subtitle: json['subtitle']?.toString(),
+      imageUrl: json['image_url']?.toString() ?? '',
+      linkType: json['link_type']?.toString(),
+      linkValue: json['link_value']?.toString(),
       displayOrder: json['display_order'] as int? ?? 0,
       isActive: json['is_active'] as bool? ?? true,
       startDate:
@@ -435,11 +438,11 @@ class ExploreSectionModel {
   factory ExploreSectionModel.fromJson(Map<String, dynamic> json) {
     return ExploreSectionModel(
       id: json['id'].toString(),
-      title: json['title'] as String,
-      iconName: json['icon_name'] as String?,
-      sectionType: json['section_type'] as String?,
-      linkValue: json['link_value'] as String?,
-      imageUrl: json['image_url'] as String?,
+      title: json['title']?.toString() ?? '',
+      iconName: json['icon_name']?.toString(),
+      sectionType: json['section_type']?.toString(),
+      linkValue: json['link_value']?.toString(),
+      imageUrl: json['image_url']?.toString(),
       displayOrder: json['display_order'] as int? ?? 0,
       isActive: json['is_active'] as bool? ?? true,
     );
